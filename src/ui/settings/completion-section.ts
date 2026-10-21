@@ -1,5 +1,4 @@
 import { Setting } from 'obsidian';
-import { t } from '../../i18n';
 import type { SettingsSectionContext } from './host';
 import { addNumber, addSlider, addToggle, applyPatch } from './shared';
 

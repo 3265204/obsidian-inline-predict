@@ -2,11 +2,13 @@
 
 [English](README.en.md)
 
+Inline Predict provides context-aware AI autocomplete for Markdown notes in Obsidian, with inline suggestions, partial acceptance, and OpenAI-compatible providers.
+
 在 Markdown 编辑器中，用灰色文字预览接下来可能要写的内容。按 **Tab** 接受，按 **Esc** 忽略，也可以只接受一个字词、一句或一行。
 
 Inline Predict 专注于写作时的行内补全。你使用自己配置的 OpenAI-compatible 模型服务；插件负责选择触发时机、限制上下文、复用已有建议，并在本地记录用量。
 
-**当前版本：0.1.0 测试版。**
+**当前版本：0.1.1 测试版，需 Obsidian 1.13.0 或更新版本。**
 
 ## 功能
 

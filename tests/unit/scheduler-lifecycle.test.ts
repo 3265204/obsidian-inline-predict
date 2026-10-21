@@ -1,3 +1,4 @@
+import { testTimers } from '../helpers/timers';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CompletionScheduler, REJECT_COOLDOWN_MS } from '../../src/scheduler/scheduler';
 import type { SchedulerConfig } from '../../src/scheduler/scheduler';
@@ -205,7 +206,7 @@ function createHarness(
 		onSuggestion: (suggestion) => suggestions.push(suggestion),
 		onStatus: (status) => statuses.push(status),
 	};
-	const scheduler = new CompletionScheduler({
+	const scheduler = new CompletionScheduler({ timers: testTimers,
 		contextBuilder,
 		runner,
 		cache,

@@ -6,13 +6,14 @@ Inline Predict 是运行在 Obsidian Markdown 编辑器中的 CodeMirror 6 插�
 
 ## 环境与构建
 
-本地需要 Node.js、npm 和 Obsidian 桌面端。Node.js 只用于开发工具，不是插件运行时依赖。
+本地需要 Node.js 24、npm 和 Obsidian 1.13.0 或更新的桌面端。Node.js 只用于开发工具，不是插件运行时依赖。
 
 ```bash
 git clone https://github.com/3265204/obsidian-inline-predict.git
 cd obsidian-inline-predict
 npm ci
 npm run typecheck
+npm run lint -- --max-warnings 0
 npm test
 npm run build
 ```
@@ -67,6 +68,7 @@ npm run build
 
 ```bash
 npm run typecheck
+npm run lint -- --max-warnings 0
 npm test
 npm run build
 node tests/smoke/load-plugin.cjs
@@ -108,6 +110,17 @@ npm run mock:server
 
 保持 `package.json`、依赖锁文件、`manifest.json` 的版本一致，并维护 `versions.json` 中版本与最低 Obsidian 版本的映射。最低版本和移动端支持需以实际验证为依据。
 
-源码不提交生成的 `main.js`。GitHub Release 标签与 `manifest.json` 的版本完全相同，例如 `0.1.0`，不加 `v`；独立附上 `main.js`、`manifest.json` 和 `styles.css`。可额外提供以 `inline-predict/` 为根目录的安装 ZIP，不能用 ZIP 替代独立附件。
+源码不提交生成的 `main.js`。GitHub Release 标签与 `manifest.json` 的版本完全相同，例如 `0.1.1`，不加 `v`；独立附上 `main.js`、`manifest.json` 和 `styles.css`。可额外提供以 `inline-predict/` 为根目录的安装 ZIP，不能用 ZIP 替代独立附件。
 
 发布由维护者操作；调整文档或同步源码不自动创建 Release。使用方法统一维护在根目录 README，不再建立独立 guide。
+
+
+## 设置搜索与构建证明
+
+设置页使用 Obsidian 1.13.0 的 `getSettingDefinitions()`，以分类名称和分类内文案建立搜索索引；仍保留折叠布局。不要在生成搜索元数据时请求模型或读取凭据。依赖状态变化时调用 `update()`，不用已弃用的 `display()`。
+
+`npm run lint` 使用官方 Obsidian ESLint 推荐规则检查运行时代码；测试和 Node 开发脚本由类型检查及各自测试验证。新增的是开发依赖，不进入插件运行包。
+
+维护者可在 GitHub Actions 手动运行 **Build and attest plugin assets**。工作流完成检查、构建和 provenance attestation，并上传三个独立安装文件；不会自动创建或修改 Release。发布时下载本次工作流的 `inline-predict-assets` 附件，解压后上传其中的 `main.js`、`manifest.json`、`styles.css`，保持字节不变。
+
+已有 Release 不会因为加入工作流而自动获得证明；证明只对应实际由工作流构建并签署的文件。验证示例：`gh attestation verify main.js --repo 3265204/obsidian-inline-predict`。

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
 	codePointLength,
+	sanitizeControlCharacters,
 	commonPrefixLength,
 	endsWithHighSurrogate,
 	lastCompleteBoundary,
@@ -129,5 +130,16 @@ describe('whitespace helpers', () => {
 	it('counts trailing whitespace', () => {
 		expect(trailingWhitespaceLength('abc  \n')).toBe(3);
 		expect(trailingWhitespaceLength('abc')).toBe(0);
+	});
+});
+
+
+describe('控制字符清理', () => {
+	const controls = Array.from({ length: 32 }, (_, index) => String.fromCharCode(index)).join('') + String.fromCharCode(127);
+	it('正文保留制表换行和完整 Unicode 文本', () => {
+		expect(sanitizeControlCharacters('中文😀' + controls + 'かな')).toBe('中文😀\t\n\rかな');
+	});
+	it('错误信息中的全部控制字符替换为空格', () => {
+		expect(sanitizeControlCharacters(controls, false, ' ')).toBe(' '.repeat(33));
 	});
 });

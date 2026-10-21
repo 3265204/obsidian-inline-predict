@@ -200,7 +200,6 @@ export class Telemetry {
 	/** Derived KPI-facing numbers. */
 	metrics(): TelemetryMetrics {
 		const accepted = this.fullAccepts + this.partialAccepts;
-		const decisions = accepted + this.rejects;
 		const tokens = this.inputTokens + this.outputTokens;
 		const usageRequests = this.estimatedUsageRequests + this.providerUsageRequests;
 		return {

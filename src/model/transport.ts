@@ -11,7 +11,8 @@
  * `HttpTransport` and never exercise `createObsidianHttpTransport`.
  */
 import { requestUrl } from 'obsidian';
-import { ModelError } from '../core/types';
+import { ModelError, type TimerScheduler } from '../core/types';
+import { createWindowTimers } from '../core/timers';
 
 export interface HttpRequest {
 	url: string;
@@ -30,7 +31,7 @@ export interface HttpTransport {
 	post(request: HttpRequest): Promise<HttpResponse>;
 }
 
-export function createObsidianHttpTransport(): HttpTransport {
+export function createObsidianHttpTransport(timers?: TimerScheduler): HttpTransport {
 	return {
 		post(request: HttpRequest): Promise<HttpResponse> {
 			return new Promise<HttpResponse>((resolve, reject) => {
@@ -40,12 +41,12 @@ export function createObsidianHttpTransport(): HttpTransport {
 				}
 
 				let settled = false;
-				let timer: ReturnType<typeof setTimeout> | null = null;
+				let cancelTimeout: (() => void) | null = null;
 
 				function finish(complete: () => void): void {
 					if (settled) return;
 					settled = true;
-					if (timer !== null) clearTimeout(timer);
+					cancelTimeout?.();
 					request.signal.removeEventListener('abort', onAbort);
 					complete();
 				}
@@ -55,7 +56,7 @@ export function createObsidianHttpTransport(): HttpTransport {
 				}
 
 				if (request.timeoutMs > 0) {
-					timer = setTimeout(() => {
+					cancelTimeout = (timers ?? createWindowTimers(window)).schedule(() => {
 						finish(
 							() =>
 								reject(

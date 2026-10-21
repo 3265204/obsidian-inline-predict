@@ -17,7 +17,7 @@ import type {
 	TokenBudgetReport,
 	TokenCounter,
 } from '../core/types';
-import { isHighSurrogate, isLowSurrogate } from '../core/text';
+import { isLowSurrogate } from '../core/text';
 
 /**
  * Fixed prompt overhead that is not part of any section: section delimiters, wrapper tags and

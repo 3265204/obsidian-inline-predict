@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeAll, afterEach, describe, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
 import { EditorState } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
 import {
@@ -10,6 +11,13 @@ import {
 } from '../../src/editor/ghost-text';
 import { t } from '../../src/i18n';
 import type { ActiveSuggestion } from '../../src/core/types';
+
+const stylesheet = document.createElement('style');
+beforeAll(() => {
+	stylesheet.textContent = readFileSync('styles.css', 'utf8');
+	document.head.appendChild(stylesheet);
+});
+afterAll(() => stylesheet.remove());
 
 const openViews: EditorView[] = [];
 
@@ -143,8 +151,8 @@ describe('ghost text state field', () => {
 		const ghost = ghostElement(harness.view) as HTMLElement | null;
 		expect(ghost).not.toBeNull();
 		expect(ghost?.textContent?.startsWith('\n- one\n- two')).toBe(true);
-		expect(ghost?.style.whiteSpace).toBe('pre-wrap');
-		expect(ghost?.style.pointerEvents).toBe('none');
+		expect(getComputedStyle(ghost!).whiteSpace).toBe('pre-wrap');
+		expect(getComputedStyle(ghost!).pointerEvents).toBe('none');
 		expect(harness.view.state.doc.toString()).toBe('intro');
 	});
 
@@ -154,7 +162,7 @@ describe('ghost text state field', () => {
 		const chip = harness.view.contentDOM.querySelector('.predictive-ghost-accept');
 		expect(chip).not.toBeNull();
 		expect(chip?.getAttribute('aria-label')).toBe(t('ghost.tapToAccept'));
-		expect((chip as HTMLElement).style.pointerEvents).toBe('auto');
+		expect(getComputedStyle(chip!).pointerEvents).toBe('auto');
 		const mouseDown = new MouseEvent('mousedown', { bubbles: true, cancelable: true });
 		chip?.dispatchEvent(mouseDown);
 		expect(mouseDown.defaultPrevented).toBe(true);
@@ -211,6 +219,8 @@ describe('ghost text and IME composition', () => {
 		expect(dispatch).not.toHaveBeenCalled();
 		expect(harness.view.dom.classList.contains('predictive-composing')).toBe(true);
 		expect(ghostElement(harness.view)).not.toBeNull();
+		expect(getComputedStyle(ghostElement(harness.view)!).display).toBe('none');
+		expect(getComputedStyle(harness.view.contentDOM.querySelector('.predictive-ghost-accept')!).display).toBe('none');
 		expect(getGhostSuggestion(harness.view.state)).not.toBeNull();
 
 		const tab = keydown(harness.view, 'Tab');

@@ -12,6 +12,7 @@
 
 import type { EditorView } from '@codemirror/view';
 import { isLowSurrogate } from '../core/text';
+import { createWindowTimers } from '../core/timers';
 import { applyAccept, type AcceptGranularity, type AcceptResult } from '../editor/accept';
 import { trySetGhostSuggestion } from '../editor/ghost-text';
 import { shouldDeferAutoRequest } from './context-gate';
@@ -35,7 +36,7 @@ export class CompletionController {
 	private destroyed = false;
 	private composing = false;
 	private suppressValidation = false;
-	private ignoredTimer: ReturnType<typeof setTimeout> | null = null;
+	private cancelIgnoreTimer: (() => void) | null = null;
 	private shownAt = 0;
 	private paused = false;
 	private renderGeneration = 0;
@@ -363,16 +364,16 @@ export class CompletionController {
 
 	private armIgnoreTimer(): void {
 		this.clearIgnoreTimer();
-		this.ignoredTimer = setTimeout(() => {
-			this.ignoredTimer = null;
+		const owner = this.view.dom.ownerDocument.defaultView ?? window;
+		this.cancelIgnoreTimer = createWindowTimers(owner).schedule(() => {
+			this.cancelIgnoreTimer = null;
 			if (this.destroyed || this.suggestion === null) return;
 			this.clearSuggestion({ type: 'ignored', shownForMs: Date.now() - this.shownAt });
 		}, IGNORED_AFTER_MS);
 	}
 
 	private clearIgnoreTimer(): void {
-		if (this.ignoredTimer === null) return;
-		clearTimeout(this.ignoredTimer);
-		this.ignoredTimer = null;
+		this.cancelIgnoreTimer?.();
+		this.cancelIgnoreTimer = null;
 	}
 }

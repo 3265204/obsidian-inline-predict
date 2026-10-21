@@ -63,7 +63,7 @@ let requestUrlCalls = 0;
 class Plugin {
 	constructor(app) {
 		this.app = app;
-		this.manifest = { id: 'inline-predict', version: '0.1.0' };
+		this.manifest = { id: 'inline-predict', version: '0.1.1' };
 	}
 	async loadData() {
 		return saved.data;

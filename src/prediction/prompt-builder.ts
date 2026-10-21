@@ -17,6 +17,7 @@ import type {
 	ContextSectionId,
 	EditorSnapshot,
 } from '../core/types';
+import { sanitizeControlCharacters } from '../core/text';
 
 /** Stable English rules; do not add request-specific text here. */
 export const COMPLETION_SYSTEM_PROMPT = [
@@ -63,9 +64,7 @@ const SECTION_TAGS: Readonly<Record<ContextSectionId, string>> = {
 
 /** Keep tabs/newlines (they are content) but drop other control characters. */
 function sanitize(text: string): string {
-	return text
-		.replace(/\r\n?/g, '\n')
-		.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, '');
+	return sanitizeControlCharacters(text.replace(/\r\n?/g, '\n'));
 }
 
 function renderBlock(tag: string, text: string): string {

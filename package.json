@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-inline-predict",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"description": "Inline AI completion for Obsidian with context budgets and local usage diagnostics.",
 	"main": "main.js",
 	"type": "module",
@@ -14,7 +14,8 @@
 		"bench": "vitest bench --run",
 		"smoke": "npm run build && node tests/smoke/load-plugin.cjs",
 		"deploy": "npm run build && node tools/deploy-to-vault.mjs",
-		"mock:server": "node tools/mock-completion-server.mjs"
+		"mock:server": "node tools/mock-completion-server.mjs",
+		"lint": "eslint src"
 	},
 	"keywords": [
 		"obsidian",
@@ -33,6 +34,8 @@
 		"@lezer/common": "^1.2.3",
 		"@types/node": "^22.15.17",
 		"esbuild": "0.25.5",
+		"eslint": "^9.39.5",
+		"eslint-plugin-obsidianmd": "^0.4.2",
 		"jsdom": "^26.1.0",
 		"obsidian": "latest",
 		"typescript": "^5.8.3",

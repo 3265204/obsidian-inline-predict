@@ -126,25 +126,16 @@ class GhostWidget extends WidgetType {
 	}
 
 	toDOM(view: EditorView): HTMLElement {
-		const wrap = document.createElement('span');
-		wrap.className = 'predictive-ghost';
-		// Inline widget with pre-wrap: newlines render as line breaks without touching the doc.
-		wrap.style.whiteSpace = 'pre-wrap';
-		wrap.style.pointerEvents = 'none';
-		wrap.style.userSelect = 'none';
-		wrap.appendChild(document.createTextNode(this.displayText));
+		// 在编辑器所属文档创建灰字，避免弹出窗口引用主窗口的 DOM。
+		const fragment = view.dom.ownerDocument.adoptNode(createFragment());
+		const wrap = fragment.createSpan({ cls: 'predictive-ghost', text: this.displayText });
 
 		// Touch/pointer accept chip; it must not take focus away from the editor.
-		const chip = document.createElement('span');
-		chip.className = 'predictive-ghost-accept';
+		const chip = wrap.createSpan({ cls: 'predictive-ghost-accept' });
 		chip.setAttribute('role', 'button');
 		chip.setAttribute('aria-label', t('ghost.tapToAccept'));
 		chip.setAttribute('tabindex', '-1');
 		chip.textContent = t('ghost.acceptHint');
-		chip.style.pointerEvents = 'auto';
-		chip.style.cursor = 'pointer';
-		chip.style.userSelect = 'none';
-		chip.style.marginInlineStart = '0.35em';
 		chip.addEventListener('mousedown', (event) => {
 			event.preventDefault();
 			event.stopPropagation();
@@ -154,7 +145,6 @@ class GhostWidget extends WidgetType {
 			event.stopPropagation();
 			view.state.facet(ghostOptionsFacet)?.accept();
 		});
-		wrap.appendChild(chip);
 		return wrap;
 	}
 }

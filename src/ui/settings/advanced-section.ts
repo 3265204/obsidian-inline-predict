@@ -45,7 +45,7 @@ export function renderAdvancedSection(ctx: SettingsSectionContext): void {
 		.setName(t('settings.advanced.resetAll'))
 		.addButton((button) => {
 			button.setButtonText(t('settings.advanced.resetAll'));
-			button.setWarning();
+			button.setDestructive();
 			button.onClick(() => {
 				confirmAction(ctx, {
 					title: t('settings.advanced.resetAll'),

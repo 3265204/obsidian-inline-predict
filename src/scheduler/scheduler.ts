@@ -26,6 +26,8 @@ import type {
 } from '../core/types';
 import { EDIT_HISTORY_SIZE } from '../core/constants';
 import { commonPrefixLength } from '../core/text';
+import { createWindowTimers } from '../core/timers';
+import type { TimerScheduler } from '../core/types';
 import { candidateCacheKey } from './prediction-cache';
 import type { LruPredictionCache } from './prediction-cache';
 import { RequestExecutor } from './request-executor';
@@ -66,6 +68,8 @@ export interface SchedulerDeps {
 	events: SchedulerEvents;
 	/** Injectable clock (defaults to `Date.now`) so tests can drive fake timers. */
 	now?: () => number;
+	/** 测试注入平台无关的计时器，运行时默认使用浏览器窗口。 */
+	timers?: TimerScheduler;
 }
 
 /** After a rejection, do not re-ask for the same anchor for this long. */
@@ -87,7 +91,8 @@ export class CompletionScheduler implements SchedulerPort {
 	private status: SchedulerStatus = 'idle';
 	private snapshot: EditorSnapshot | null = null;
 	private active: ActiveSuggestion | null = null;
-	private timer: ReturnType<typeof setTimeout> | null = null;
+	private timer: (() => void) | null = null;
+	private readonly timers: TimerScheduler;
 	private failureCount = 0;
 	private editTimestamps: number[] = [];
 	private editHistoryDocId: string | null = null;
@@ -99,6 +104,7 @@ export class CompletionScheduler implements SchedulerPort {
 
 	constructor(deps: SchedulerDeps) {
 		this.deps = deps;
+		this.timers = deps.timers ?? createWindowTimers(window);
 		this.now = deps.now ?? (() => Date.now());
 		this.events = deps.events;
 		this.configurationVersion = deps.getConfig().configurationVersion ?? 0;
@@ -430,13 +436,13 @@ export class CompletionScheduler implements SchedulerPort {
 
 	private cancelTimer(): void {
 		if (this.timer === null) return;
-		globalThis.clearTimeout(this.timer);
+		this.timer();
 		this.timer = null;
 	}
 
 	private scheduleTimer(delayMs: number): void {
 		this.cancelTimer();
-		this.timer = globalThis.setTimeout(() => {
+		this.timer = this.timers.schedule(() => {
 			this.timer = null;
 			if (this.disposed) return;
 			this.executor.start(this.requestObserver);

@@ -6,7 +6,9 @@
  * group shell and ordering; section renderers fill the group body and never create headings.
  */
 
-import { PluginSettingTab, Setting } from 'obsidian';
+import { PluginSettingTab } from 'obsidian';
+import type { Setting, SettingDefinitionItem } from 'obsidian';
+import { en } from '../i18n/en';
 import type { App, Plugin } from 'obsidian';
 import { t } from '../i18n';
 import type { TranslationKey } from '../i18n';
@@ -46,30 +48,47 @@ export class PredictiveSettingTab extends PluginSettingTab {
 		this.host = host;
 	}
 
-	display(): void {
-		const { containerEl } = this;
-		containerEl.empty();
-		containerEl.addClass('predictive-settings');
+	getSettingDefinitions(): SettingDefinitionItem[] {
+		return [
+			{
+				name: t('settings.intro.modelSetup'),
+				searchable: false,
+				render: (setting) => {
+					setting.settingEl.empty();
+					setting.settingEl.addClass('predictive-intro');
+					setting.settingEl.createEl('p', { text: t('settings.intro.modelSetup') });
+				},
+			},
+			...CATEGORIES.map((category) => ({
+				name: t(category.title),
+				// 将分类内的名称和说明纳入搜索，避免只搜得到分类标题。
+				aliases: this.categoryAliases(category),
+				render: (setting: Setting) => this.renderCategory(setting, category),
+			})),
+		];
+	}
 
-		new Setting(containerEl).setName(t('settings.title')).setHeading();
+	private categoryAliases(category: SettingsCategory): string[] {
+		const key = category.title.slice('settings.section.'.length);
+		return (Object.keys(en) as TranslationKey[])
+			.filter((name) => name.startsWith(`settings.${key}.`))
+			.map((name) => t(name));
+	}
 
-		// Always visible: the first thing a new user needs is how to make predictions work at all.
-		const intro = containerEl.createDiv({ cls: 'predictive-intro' });
-		intro.createEl('p', { text: t('settings.intro.modelSetup') });
-
-		for (const category of CATEGORIES) {
-			const { body } = addCollapsibleGroup(containerEl, {
-				title: category.title,
-				defaultOpen: false,
-				cls: 'predictive-settings-section',
-			});
-			const ctx: SettingsSectionContext = {
-				app: this.app,
-				host: this.host,
-				containerEl: body,
-				refresh: () => this.display(),
-			};
-			category.render(ctx);
-		}
+	private renderCategory(setting: Setting, category: SettingsCategory): void {
+		this.containerEl.addClass('predictive-settings');
+		setting.settingEl.empty();
+		setting.settingEl.addClass('predictive-category');
+		const { body } = addCollapsibleGroup(setting.settingEl, {
+			title: category.title,
+			defaultOpen: false,
+			cls: 'predictive-settings-section',
+		});
+		category.render({
+			app: this.app,
+			host: this.host,
+			containerEl: body,
+			refresh: () => this.update(),
+		});
 	}
 }

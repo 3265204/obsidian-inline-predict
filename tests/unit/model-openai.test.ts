@@ -1,3 +1,4 @@
+import { testTimers } from '../helpers/timers';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ModelError, type ModelRequest, type TokenUsage } from '../../src/core/types';
 import type { HttpRequest, HttpResponse, HttpTransport } from '../../src/model/transport';
@@ -436,7 +437,7 @@ describe('createObsidianHttpTransport', () => {
 
 	it('posts JSON through requestUrl with throw:false and without an Authorization leak', async () => {
 		requestUrlMock.mockResolvedValue({ status: 200, text: '{"ok":true}' });
-		const transport = createObsidianHttpTransport();
+		const transport = createObsidianHttpTransport(testTimers);
 		const controller = new AbortController();
 		const response = await transport.post({
 			url: 'https://api.example.test/v1/chat/completions',
@@ -456,7 +457,7 @@ describe('createObsidianHttpTransport', () => {
 	it('rejects with a timeout ModelError when the request outlives timeoutMs', async () => {
 		vi.useFakeTimers();
 		requestUrlMock.mockReturnValue(new Promise(() => {}));
-		const transport = createObsidianHttpTransport();
+		const transport = createObsidianHttpTransport(testTimers);
 		const controller = new AbortController();
 		const pending = captureError(
 			transport.post({
@@ -472,8 +473,9 @@ describe('createObsidianHttpTransport', () => {
 	});
 
 	it('rejects with an aborted ModelError when the signal aborts mid-flight', async () => {
+		vi.useFakeTimers();
 		requestUrlMock.mockReturnValue(new Promise(() => {}));
-		const transport = createObsidianHttpTransport();
+		const transport = createObsidianHttpTransport(testTimers);
 		const controller = new AbortController();
 		const pending = captureError(
 			transport.post({
@@ -486,11 +488,12 @@ describe('createObsidianHttpTransport', () => {
 		);
 		controller.abort();
 		expect((await pending).kind).toBe('aborted');
+		expect(vi.getTimerCount()).toBe(0);
 	});
 
 	it('maps a requestUrl rejection to a retryable network error', async () => {
 		requestUrlMock.mockRejectedValue(new Error('offline'));
-		const transport = createObsidianHttpTransport();
+		const transport = createObsidianHttpTransport(testTimers);
 		const controller = new AbortController();
 		await expect(
 			transport.post({

@@ -94,6 +94,10 @@ export const en = {
 	'settings.model.reasoningEffort.name': 'Reasoning effort',
 	'settings.model.reasoningEffort.desc':
 		'Optional provider parameter. Some reasoning models (e.g. DeepSeek V4 Flash) spend hidden tokens on reasoning before answering, which breaks inline prediction. Use “none” for those. Leave as provider default to omit the parameter completely.',
+	'settings.model.reasoningEffort.none': 'None',
+	'settings.model.reasoningEffort.low': 'Low',
+	'settings.model.reasoningEffort.medium': 'Medium',
+	'settings.model.reasoningEffort.high': 'High',
 	'settings.model.reasoningEffort.default': 'Provider default (omit)',
 	'settings.model.privacyNote':
 		'When prediction is on, text around the cursor (plus optional related notes and profile) is sent to the provider above. With an empty API key or model id, no request is made.',

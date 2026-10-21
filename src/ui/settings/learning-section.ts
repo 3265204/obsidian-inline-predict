@@ -44,7 +44,7 @@ export function renderLearningSection(ctx: SettingsSectionContext): void {
 	for (const action of buttons) {
 		const button = new ButtonComponent(row);
 		button.setButtonText(action.label);
-		if (action.destructive) button.setWarning();
+		if (action.destructive) button.setDestructive();
 		if (!PROFILE_ACTIONS_AVAILABLE) {
 			// Enabled together with the M6 implementation; until then the disabled state is the
 			// honest signal that clicking would not do anything.

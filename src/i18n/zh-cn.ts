@@ -95,6 +95,10 @@ export const zhCn: Record<keyof typeof en, string> = {
 	'settings.model.reasoningEffort.name': '推理强度',
 	'settings.model.reasoningEffort.desc':
 		'可选的模型参数。部分推理模型（如 DeepSeek V4 Flash）会先消耗隐藏推理 Token 再输出，导致行内补全变慢甚至为空。此类模型请选择 “none”。保持“服务商默认”则完全不带该参数。',
+	'settings.model.reasoningEffort.none': '无',
+	'settings.model.reasoningEffort.low': '低',
+	'settings.model.reasoningEffort.medium': '中',
+	'settings.model.reasoningEffort.high': '高',
 	'settings.model.reasoningEffort.default': '服务商默认（不带该参数）',
 	'settings.model.privacyNote':
 		'开启预测后，光标附近的文本（以及可选的笔记片段和画像）会发送到上述服务商。API Key 或模型 ID 为空时不会发出任何请求。',

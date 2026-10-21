@@ -4,6 +4,7 @@
  * together, so it guards the seams (prompt assembly, validation, caching, prefix reuse, gating).
  */
 
+import { testTimers } from '../helpers/timers';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type {
 	ActiveSuggestion,
@@ -139,7 +140,7 @@ function createHarness(adapter: FakeAdapter, overrides: Partial<SchedulerConfig>
 	const suggestions: ActiveSuggestion[] = [];
 	const statuses: SchedulerStatus[] = [];
 	let config = baseConfig(overrides);
-	const scheduler = new CompletionScheduler({
+	const scheduler = new CompletionScheduler({ timers: testTimers,
 		contextBuilder,
 		runner,
 		cache,

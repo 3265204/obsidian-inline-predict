@@ -13,7 +13,7 @@ describe('运行配置更新', () => {
 		{ completion: { verifyOffTopicWithModel: false } },
 	] satisfies DeepPartial<PredictiveSettings>[])('修改构造参数后重建实例并失效缓存：%j', async (patch) => {
 		const plugin = new PredictivePlugin({} as App, {
-			id: 'inline-predict', name: 'Inline Predict', version: '0.1.0', minAppVersion: '1.5.0', author: 'test', description: 'test',
+			id: 'inline-predict', name: 'Inline Predict', version: '0.1.1', minAppVersion: '1.13.0', author: 'test', description: 'test',
 		});
 		plugin.settings = applySettingsPatch(DEFAULT_SETTINGS, { provider: { apiKey: 'test-key' } });
 		const probe = plugin as unknown as {

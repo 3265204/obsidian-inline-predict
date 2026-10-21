@@ -11,6 +11,7 @@
  * The validator never truncates silently: any repair marks the candidate `degraded` so telemetry
  * and diagnostics can tell repaired suggestions from clean ones.
  */
+import { sanitizeControlCharacters } from '../core/text';
 import type {
 	EditorSnapshot,
 	ModelResponse,
@@ -48,9 +49,7 @@ const MIN_REPAIR_RATIO = 0.4;
 const FENCE_WRAP_RE = /^```[^\n]*\n([\s\S]*?)\n```$/;
 
 function normalize(text: string): string {
-	return text
-		.replace(/\r\n?/g, '\n')
-		.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, '');
+	return sanitizeControlCharacters(text.replace(/\r\n?/g, '\n'));
 }
 
 function rejected(reason: PredictionSkipReason, degraded: boolean): ValidationResult {

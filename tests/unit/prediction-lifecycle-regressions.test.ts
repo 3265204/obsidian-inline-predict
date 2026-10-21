@@ -1,3 +1,4 @@
+import { testTimers } from '../helpers/timers';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ModelError, type EditorSnapshot, type ModelAdapter, type ModelErrorKind, type ModelRequest, type ModelResponse } from '../../src/core/types';
 import { ContextEngine } from '../../src/context/context-engine';
@@ -24,7 +25,7 @@ function setup(reply: (request: ModelRequest, index: number) => Promise<ModelRes
 	const telemetry = new Telemetry();
 	const config: SchedulerConfig = { baseDebounceMs: 400, minRequestIntervalMs: 350, maxOutputTokens: 256,
 		requestTimeoutMs: 8000, temperature: 0.2, cacheEntries: 64, contextCacheEntries: 32, debug: false, autoTrigger: false, configurationVersion: 0 };
-	const scheduler = new CompletionScheduler({ contextBuilder: new ContextEngine({ modelContextWindow: 8192, maxOutputTokens: 256 }),
+	const scheduler = new CompletionScheduler({ timers: testTimers, contextBuilder: new ContextEngine({ modelContextWindow: 8192, maxOutputTokens: 256 }),
 		runner: new PredictionEngine({ adapter, maxSuggestionChars: 4000, relevanceJudge: judge ? new ModelRelevanceJudge(adapter) : undefined }),
 		cache: new LruPredictionCache(), telemetry, getConfig: () => config, events: { onStatus: () => undefined, onSuggestion: () => undefined } });
 	return { scheduler, telemetry, config, requests };

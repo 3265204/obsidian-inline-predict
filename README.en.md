@@ -6,7 +6,7 @@ Inline Predict previews continuations as grey text inside the Markdown editor. P
 **Esc** to dismiss, or use commands to accept a word/character, sentence or line. Suggestions do not
 modify the note until accepted.
 
-**Version 0.1.0 — beta.**
+**Version 0.1.1 — beta. Requires Obsidian 1.13.0 or later.**
 
 ## Install and configure
 

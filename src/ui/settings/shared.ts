@@ -123,9 +123,7 @@ export function addSlider(container: HTMLElement, options: SliderOptions): Setti
 	return setting.addSlider((slider) => {
 		slider.setLimits(options.min, options.max, options.step);
 		slider.setValue(options.value);
-		// Supported since Obsidian 0.9.7 (minimum we target). Newer builds show the value inline
-		// anyway; keeping this call makes the value visible on older app versions.
-		slider.setDynamicTooltip();
+
 		slider.onChange((value) => void options.onChange(value));
 	});
 }

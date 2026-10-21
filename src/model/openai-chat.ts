@@ -17,6 +17,7 @@ import {
 	type ModelResponse,
 	type TokenUsage,
 } from '../core/types';
+import { sanitizeControlCharacters } from '../core/text';
 import { heuristicTokenCounter } from '../tokens/estimator';
 import { createObsidianHttpTransport, type HttpResponse, type HttpTransport } from './transport';
 
@@ -159,7 +160,7 @@ function extractProviderMessage(text: string, apiKey: string): string | null {
 		message = null;
 	}
 	if (message === null) return null;
-	const withoutControl = message.replace(/[\u0000-\u001f\u007f]/g, ' ').trim();
+	const withoutControl = sanitizeControlCharacters(message, false, ' ').trim();
 	const redacted = apiKey.length > 0 ? withoutControl.split(apiKey).join('[redacted]') : withoutControl;
 	if (redacted.length === 0) return null;
 	return redacted.length > MAX_PROVIDER_MESSAGE_CHARS

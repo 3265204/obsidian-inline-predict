@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { testTimers } from '../helpers/timers';
 import { afterEach, describe, expect, it } from 'vitest';
 import { EditorState } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
@@ -24,7 +25,7 @@ async function setup() {
 	const settings = applySettingsPatch(DEFAULT_SETTINGS, { completion: { autoTrigger: false } });
 	const integration = createCompletionIntegration({ getSettings: () => settings,
 		getDocInfo: () => ({ docId: 'note.md', mode: 'source', language: 'markdown' }),
-		createScheduler: (events) => new CompletionScheduler({
+		createScheduler: (events) => new CompletionScheduler({ timers: testTimers,
 			contextBuilder: new ContextEngine({ modelContextWindow: 8192, maxOutputTokens: 256 }),
 			runner: new PredictionEngine({ adapter, maxSuggestionChars: 4000 }), cache: new LruPredictionCache(), telemetry,
 			getConfig: () => ({ baseDebounceMs: 400, minRequestIntervalMs: 350, maxOutputTokens: 256,

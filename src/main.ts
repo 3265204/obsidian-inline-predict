@@ -37,7 +37,6 @@ import { CompletionScheduler } from './scheduler/scheduler';
 import type { SchedulerConfig } from './scheduler/scheduler';
 import { LruPredictionCache } from './scheduler/prediction-cache';
 import { VaultStorage } from './storage/vault-storage';
-import type { VaultAdapterLike } from './storage/types';
 import { Telemetry } from './telemetry/stats';
 import { PredictiveSettingTab } from './ui/settings-tab';
 import type { SettingsHost } from './ui/settings-tab';
@@ -70,7 +69,7 @@ export default class PredictivePlugin extends Plugin {
 		);
 
 		this.cache = new LruPredictionCache({ maxEntries: this.settings.advanced.cacheEntries });
-		this.storage = new VaultStorage(this.app.vault.adapter as unknown as VaultAdapterLike);
+		this.storage = new VaultStorage(this.app.vault.adapter);
 		this.rebuildPredictionStack();
 
 		this.integration = createCompletionIntegration({
@@ -133,7 +132,7 @@ export default class PredictivePlugin extends Plugin {
 
 	private readAppLanguage(): string | undefined {
 		try {
-			// `getLanguage` exists since Obsidian 1.8.7; guard for older apps declared by minAppVersion.
+			// 优先跟随应用语言，避免系统区域设置覆盖用户选择。
 			if (typeof getLanguage === 'function') return getLanguage();
 		} catch {
 			// Fall through to moment/navigator.

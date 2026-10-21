@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 
 export default defineConfig({
 	test: {
+		setupFiles: ['tests/setup.ts'],
 		include: ['tests/**/*.test.ts', 'tests/**/*.bench.ts'],
 		exclude: ['node_modules', 'tests/mocks/**'],
 	},

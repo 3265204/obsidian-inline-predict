@@ -10,6 +10,17 @@ export function isHighSurrogate(code: number): boolean {
 	return code >= 0xd800 && code <= 0xdbff;
 }
 
+/** 保留正文中的制表和换行；错误消息可选择将全部控制字符替换为空格。 */
+export function sanitizeControlCharacters(text: string, preserveWhitespace = true, replacement = ''): string {
+	let result = '';
+	for (const character of text) {
+		const code = character.charCodeAt(0);
+		const whitespace = preserveWhitespace && (code === 9 || code === 10 || code === 13);
+		result += (code < 32 || code === 127) && !whitespace ? replacement : character;
+	}
+	return result;
+}
+
 export function isLowSurrogate(code: number): boolean {
 	return code >= 0xdc00 && code <= 0xdfff;
 }

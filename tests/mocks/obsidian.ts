@@ -30,7 +30,7 @@ export class Component {
 
 export class Plugin extends Component {
 	app: any;
-	manifest = { id: 'inline-predict', version: '0.1.0' };
+	manifest = { id: 'inline-predict', version: '0.1.1' };
 	constructor(app?: any) {
 		super();
 		this.app = app;
@@ -62,11 +62,17 @@ export class PluginSettingTab {
 		this.containerEl = { empty: () => {}, createEl: () => ({}) };
 	}
 	display(): void {}
+	update(): void {}
 	hide(): void {}
 }
 
 export class Setting {
-	constructor(_containerEl: unknown) {}
+	settingEl!: HTMLElement;
+	constructor(containerEl: unknown) {
+		if (typeof document !== 'undefined' && containerEl instanceof HTMLElement) {
+			this.settingEl = containerEl.createDiv({ cls: 'setting-item' });
+		}
+	}
 	setName(_name: string): this {
 		return this;
 	}

@@ -28,7 +28,7 @@ export class ConfirmModal extends Modal {
 		const row = this.contentEl.createDiv({ cls: 'predictive-modal-buttons' });
 		const confirm = new ButtonComponent(row);
 		confirm.setButtonText(confirmLabel);
-		confirm.setWarning();
+		confirm.setDestructive();
 		confirm.onClick(() => {
 			this.close();
 			onConfirm();

@@ -10,6 +10,11 @@
 /* Tokens & model                                                      */
 /* ------------------------------------------------------------------ */
 
+/** 返回取消函数，避免把浏览器或 Node 的计时器句柄泄漏到纯逻辑层。 */
+export interface TimerScheduler {
+	schedule(callback: () => void, delayMs: number): () => void;
+}
+
 /**
  * Token accounting. `estimated` separates heuristic counts from values returned by the
  * provider, which are authoritative. `cachedInputTokens` is only set when the provider

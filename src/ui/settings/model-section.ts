@@ -113,10 +113,10 @@ export function renderModelSection(ctx: SettingsSectionContext): void {
 		.addDropdown((dropdown) => {
 			dropdown
 				.addOption('', t('settings.model.reasoningEffort.default'))
-				.addOption('none', 'none')
-				.addOption('low', 'low')
-				.addOption('medium', 'medium')
-				.addOption('high', 'high')
+				.addOption('none', t('settings.model.reasoningEffort.none'))
+				.addOption('low', t('settings.model.reasoningEffort.low'))
+				.addOption('medium', t('settings.model.reasoningEffort.medium'))
+				.addOption('high', t('settings.model.reasoningEffort.high'))
 				.setValue(provider.reasoningEffort)
 				.onChange((value) => applyPatch(ctx, { provider: { reasoningEffort: value } }));
 		});

@@ -7,7 +7,7 @@ preserving normal editing, using bounded context well and avoiding unnecessary m
 
 ## Environment and build
 
-Install Node.js, npm and desktop Obsidian locally. Node.js is needed for development tools, not
+Install Node.js 24, npm and Obsidian 1.13.0 or later locally. Node.js is needed for development tools, not
 as a dependency of the plugin runtime.
 
 ```bash
@@ -15,6 +15,7 @@ git clone https://github.com/3265204/obsidian-inline-predict.git
 cd obsidian-inline-predict
 npm ci
 npm run typecheck
+npm run lint -- --max-warnings 0
 npm test
 npm run build
 ```
@@ -73,6 +74,7 @@ silently migrate existing data paths.
 
 ```bash
 npm run typecheck
+npm run lint -- --max-warnings 0
 npm test
 npm run build
 node tests/smoke/load-plugin.cjs
@@ -132,9 +134,29 @@ release-to-minimum-app-version mapping in `versions.json`. Minimum-version and m
 must be supported by actual testing.
 
 Generated `main.js` is not committed as source. The GitHub Release tag must exactly match the
-manifest version, for example `0.1.0` without a `v` prefix. Attach `main.js`, `manifest.json` and
+manifest version, for example `0.1.1` without a `v` prefix. Attach `main.js`, `manifest.json` and
 `styles.css` separately. An additional installation ZIP may contain these files under
 `inline-predict/`, but does not replace the separate assets.
 
 The maintainer handles publication; documentation edits or source synchronization do not
 automatically create a Release. Keep usage instructions in the root README, with no separate guide.
+
+
+## Settings search and build provenance
+
+The tab uses Obsidian 1.13.0 `getSettingDefinitions()` to index category names and their translated
+setting labels while preserving the collapsible layout. Do not call a provider or read credentials
+when creating search metadata. Refresh through `update()`, not the deprecated `display()`.
+
+`npm run lint` runs the official Obsidian ESLint recommended rules against runtime source. Tests
+and Node development tools are covered by typechecking and their relevant checks. The lint tools
+are development dependencies and are not bundled into the plugin.
+
+The maintainer can manually run **Build and attest plugin assets** in GitHub Actions. It checks,
+builds and attests the three installable files, then uploads them as `inline-predict-assets`.
+It does not create or modify a GitHub Release. Download and extract the workflow artifact, then
+upload its `main.js`, `manifest.json` and `styles.css` to the Release without changing their bytes.
+
+Adding this workflow does not retroactively attest existing Releases. An attestation applies
+only to the actual files built and signed by that run. Example verification:
+`gh attestation verify main.js --repo 3265204/obsidian-inline-predict`.
