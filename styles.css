@@ -1,0 +1,257 @@
+/* Inline Predict：仅设置插件元素的样式，颜色与间距跟随当前主题变量。 */
+
+/* ------------------------------------------------------------------ */
+/* Ghost text (inline prediction)                                      */
+/* ------------------------------------------------------------------ */
+
+.predictive-ghost {
+	opacity: 0.55;
+	color: var(--text-faint);
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+	pointer-events: none;
+	font: inherit;
+	padding-left: 0.15em;
+}
+
+/* Mobile accept chip: a real touch target rendered next to the ghost text. */
+.predictive-ghost-accept {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 24px;
+	min-height: 24px;
+	margin-left: 0.35em;
+	padding: 0 0.35em;
+	border-radius: var(--radius-s);
+	border: 1px solid var(--interactive-accent);
+	background-color: var(--background-modifier-hover);
+	color: var(--interactive-accent);
+	font-size: var(--font-ui-smaller);
+	font-weight: var(--font-medium);
+	line-height: 1;
+	white-space: nowrap;
+	pointer-events: auto;
+	cursor: pointer;
+	user-select: none;
+	touch-action: manipulation;
+	-webkit-tap-highlight-color: transparent;
+	vertical-align: baseline;
+}
+
+.predictive-ghost-accept:hover {
+	background-color: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
+
+.predictive-ghost-accept:active {
+	transform: scale(0.96);
+}
+
+/* The multi-line ghost wrapper keeps block-level rendering predictable. */
+.predictive-ghost-container {
+	display: inline;
+	white-space: pre-wrap;
+}
+
+/*
+ * IME safety: while a composition is active, ghost text and its touch chip are hidden with CSS
+ * only. The extension must not dispatch transactions during composition (it would abort the IME),
+ * so the decoration intentionally stays in the state until compositionend.
+ */
+.predictive-composing .predictive-ghost,
+.predictive-composing .predictive-ghost-accept {
+	display: none !important;
+}
+
+/* Always-visible configuration hint at the top of the settings tab. */
+.predictive-intro {
+	margin: 0.5em 0 1em;
+	padding: 0.75em 1em;
+	border-left: 3px solid var(--interactive-accent);
+	border-radius: var(--radius-s);
+	background: var(--background-secondary);
+	color: var(--text-muted);
+	font-size: var(--font-ui-small);
+}
+
+.predictive-intro p {
+	margin: 0;
+	line-height: 1.5;
+}
+
+/* Collapsible settings groups: secondary options stay out of the way. */
+.predictive-collapsible {
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-s);
+	margin: 0.75em 0;
+	background: var(--background-primary-alt);
+}
+
+.predictive-collapsible > summary {
+	cursor: pointer;
+	display: flex;
+	align-items: baseline;
+	gap: 0.5em;
+	padding: 0.55em 0.8em;
+	font-weight: 600;
+	list-style: none;
+}
+
+.predictive-collapsible > summary::-webkit-details-marker {
+	display: none;
+}
+
+.predictive-collapsible > summary::before {
+	content: '▸';
+	display: inline-block;
+	width: 0.9em;
+	color: var(--text-muted);
+	transition: transform 120ms ease;
+}
+
+.predictive-collapsible[open] > summary::before {
+	transform: rotate(90deg);
+}
+
+.predictive-collapsible-desc {
+	font-weight: 400;
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
+}
+
+.predictive-collapsible-body {
+	padding: 0 0.8em 0.4em;
+}
+
+/* ------------------------------------------------------------------ */
+/* Settings tab                                                        */
+/* ------------------------------------------------------------------ */
+
+.predictive-settings .setting-item-heading:first-child {
+	padding-top: 0;
+}
+
+.predictive-settings .predictive-note {
+	margin: 0.25em 0 0.9em;
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	line-height: var(--line-height-normal);
+}
+
+.predictive-settings .predictive-status-line {
+	margin: 0 0 0.5em;
+	padding: var(--size-4-2) var(--size-4-3);
+	border-left: 3px solid var(--interactive-accent);
+	border-radius: var(--radius-s);
+	background-color: var(--background-secondary);
+	color: var(--text-normal);
+	font-size: var(--font-ui-small);
+}
+
+.predictive-settings .predictive-status-detail {
+	margin: -0.25em 0 0.9em;
+	color: var(--text-faint);
+	font-size: var(--font-ui-smaller);
+	overflow-wrap: anywhere;
+}
+
+/* Row of action buttons (profile actions, etc.); wraps instead of overflowing on phones. */
+.predictive-settings .predictive-button-row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--size-4-2);
+	margin: 0 0 0.9em;
+}
+
+.predictive-settings .predictive-button-row button {
+	min-height: 30px;
+	touch-action: manipulation;
+}
+
+/* ------------------------------------------------------------------ */
+/* Diagnostics grid                                                    */
+/* ------------------------------------------------------------------ */
+
+.predictive-settings .predictive-diagnostics-grid {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	gap: var(--size-4-1) var(--size-4-4);
+	margin: 0 0 0.9em;
+	padding: var(--size-4-3);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	background-color: var(--background-secondary);
+}
+
+.predictive-settings .predictive-diagnostics-label {
+	color: var(--text-muted);
+	font-size: var(--font-ui-small);
+}
+
+.predictive-settings .predictive-diagnostics-value {
+	color: var(--text-normal);
+	font-size: var(--font-ui-small);
+	font-variant-numeric: tabular-nums;
+	text-align: right;
+	white-space: nowrap;
+}
+
+.predictive-settings .predictive-diagnostics-tag {
+	margin-left: 0.4em;
+	color: var(--text-faint);
+	font-size: var(--font-ui-smaller);
+	font-variant-numeric: normal;
+}
+
+/* ------------------------------------------------------------------ */
+/* Confirmation modal                                                  */
+/* ------------------------------------------------------------------ */
+
+.predictive-modal-buttons {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: flex-end;
+	gap: var(--size-4-2);
+	margin-top: var(--size-4-5);
+}
+
+.predictive-modal-buttons button {
+	min-height: 32px;
+	touch-action: manipulation;
+}
+
+/* ------------------------------------------------------------------ */
+/* Mobile / touch adjustments                                          */
+/* ------------------------------------------------------------------ */
+
+@media (max-width: 480px) {
+	.predictive-ghost-accept {
+		/* Guarantee a 28px touch target on phones without disturbing text flow. */
+		min-width: 28px;
+		min-height: 28px;
+		padding: 0 0.4em;
+	}
+
+	.predictive-settings .predictive-diagnostics-grid {
+		grid-template-columns: minmax(0, 1fr) auto;
+		gap: var(--size-4-1) var(--size-4-2);
+		padding: var(--size-4-2);
+	}
+
+	.predictive-settings .predictive-diagnostics-value {
+		white-space: normal;
+	}
+
+	.predictive-settings .predictive-button-row button {
+		min-height: 34px;
+	}
+}
+
+@media (hover: none) {
+	.predictive-ghost-accept:active {
+		background-color: var(--interactive-accent);
+		color: var(--text-on-accent);
+	}
+}
