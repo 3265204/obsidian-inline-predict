@@ -6,8 +6,7 @@ Inline Predict previews continuations as grey text inside the Markdown editor. P
 **Esc** to dismiss, or use commands to accept a word/character, sentence or line. Suggestions do not
 modify the note until accepted.
 
-**0.1.0 is a preview**, not a community-store release. Vault retrieval, semantic search
-and writing profiles are planned and are not implemented in this build.
+**Version 0.1.0 — beta.**
 
 ## Install and configure
 
