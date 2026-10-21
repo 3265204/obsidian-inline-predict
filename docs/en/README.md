@@ -1,6 +1,6 @@
-# English documentation
+# Development documentation
 
-[Project overview](../../README.en.md) · [User guide](guide.md) · [中文](../zh-CN/guide.md)
+[Development](development.md) · [中文](../zh-CN/development.md)
 
-The user guide covers installation, model configuration, completion controls, privacy,
-usage statistics, compatibility and troubleshooting.
+For installation, configuration, completion controls and troubleshooting, see the
+[project README](../../README.en.md).

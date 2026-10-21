@@ -33,15 +33,15 @@ CLAUDE.md
 .codex/
 .claude/
 
-# 文档采用允许列表：只公开面向用户的使用文档。
-# 审阅、开发说明、架构、决策、目标和状态记录保留在本地。
+# 文档采用允许列表：公开开发文档；使用说明统一放在根 README。
+# 审阅、内部架构、决策、目标和状态记录保留在本地。
 /docs/*
 !/docs/README.md
 !/docs/en/
 !/docs/zh-CN/
 /docs/en/*
 !/docs/en/README.md
-!/docs/en/guide.md
+!/docs/en/development.md
 /docs/zh-CN/*
 !/docs/zh-CN/README.md
-!/docs/zh-CN/guide.md
+!/docs/zh-CN/development.md

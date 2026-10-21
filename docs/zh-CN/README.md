@@ -1,5 +1,5 @@
-# 中文文档
+# 中文开发文档
 
-[项目介绍](../../README.md) · [使用指南](guide.md) · [English](../en/guide.md)
+[开发文档](development.md) · [English](../en/development.md)
 
-使用指南包含安装配置、自动与手动预测、分步接受、隐私与用量统计，以及常见问题。
+安装、配置、补全操作和排错请查看[项目 README](../../README.md)。

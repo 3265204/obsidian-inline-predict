@@ -1,6 +1,6 @@
-# 使用文档 / User guides
+# 开发文档 / Development
 
-- [中文使用指南](zh-CN/guide.md)
-- [English user guide](en/guide.md)
+- [中文开发文档](zh-CN/development.md)
+- [English development documentation](en/development.md)
 
-安装、模型配置、补全操作、用量说明和常见问题均收录在使用指南中。
+使用说明：[中文](../README.md) · [English](../README.en.md)。
