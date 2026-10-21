@@ -81,6 +81,29 @@ describe('buildPromptMessages', () => {
 		expect(lower).toContain('not instructions');
 	});
 
+	it('为实际系统消息指定 Obsidian 的公式定界符', () => {
+		const [system] = buildPromptMessages({ sections: baseSections, snapshot: makeSnapshot() });
+		expect(system?.content).toContain('$...$ for inline math');
+		expect(system?.content).toContain('$$...$$ for a standalone formula on its own line');
+		expect(system?.content).toContain(String.raw`Never use \(...\) or \[...\] as math delimiters`);
+		expect(system?.content).toContain('or wrap formulas in code fences');
+		expect(system?.content).toContain('do not duplicate delimiters already present before or after it');
+	});
+
+	it.each([
+		{ prefix: '能量公式 $E', suffix: '$ 与质量相关。', inMathBlock: false },
+		{ prefix: '独立公式：\n$$E', suffix: '$$\n', inMathBlock: true },
+		{ prefix: '已知 $x=1$，因此 ', suffix: '。', inMathBlock: false },
+	])('续写公式时保持原有前后文边界：$prefix', ({ prefix, suffix, inMathBlock }) => {
+		const [system, user] = buildPromptMessages({
+			sections: [makeSection('before', prefix), makeSection('after', suffix)],
+			snapshot: makeSnapshot({ prefix, suffix, inMathBlock }),
+		});
+		expect(system?.content).toBe(COMPLETION_SYSTEM_PROMPT);
+		expect(user?.content).toContain(`<document-before-cursor>${prefix}<cursor/></document-before-cursor>`);
+		expect(user?.content).toContain(`<document-after-cursor>${suffix}</document-after-cursor>`);
+	});
+
 	it('delimits each context section with its tag and puts nearest context last', () => {
 		const [, user] = buildPromptMessages({ sections: baseSections, snapshot: makeSnapshot() });
 		const content = user?.content ?? '';

@@ -13,6 +13,29 @@ function snapshot(): EditorSnapshot {
 }
 
 describe('最终消息预算', () => {
+	it('公式格式规则进入真实模型请求，并只返回光标处续写', async () => {
+		const calls: ModelRequest[] = [];
+		const adapter: ModelAdapter = {
+			id: 'fake', modelId: 'fake', contextWindow: 8192,
+			async complete(request) {
+				calls.push(request);
+				return { text: '=mc^2', finishReason: 'stop', usage: null, modelId: 'fake' };
+			},
+		};
+		const prefix = '能量公式 $E';
+		const suffix = '$ 与质量相关。';
+		const value = { ...snapshot(), prefix, suffix, cursor: prefix.length, selectionFrom: prefix.length, selectionTo: prefix.length, lineTextBefore: prefix, lineTextAfter: suffix };
+		const context = await new ContextEngine({ modelContextWindow: 8192, maxOutputTokens: 256 }).build(value, new AbortController().signal);
+		const outcome = await new PredictionEngine({ adapter, maxSuggestionChars: 100 }).predict(context, {
+			requestId: 1, signal: new AbortController().signal, timeoutMs: 1000, maxOutputTokens: 256, temperature: 0.2,
+		});
+		expect(calls).toHaveLength(1);
+		expect(calls[0]?.messages[0]?.content).toContain('$...$ for inline math');
+		expect(calls[0]?.messages[0]?.content).toContain('$$...$$ for a standalone formula');
+		expect(outcome.candidate?.text).toBe('=mc^2');
+		expect(prefix + outcome.candidate?.text + suffix).toBe('能量公式 $E=mc^2$ 与质量相关。');
+	});
+
 	it('系统提示、标签、输入和输出预留共同满足窗口上限', async () => {
 		const calls: ModelRequest[] = [];
 		const adapter: ModelAdapter = { id: 'fake', modelId: 'fake', contextWindow: 1024, tokenCounter: heuristicTokenCounter,

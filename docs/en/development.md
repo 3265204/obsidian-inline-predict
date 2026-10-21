@@ -52,6 +52,11 @@ same change when a contract changes. Keep business logic in its module and `main
 6. Validation handles truncation and repetition. Request ID, document version, cursor and file path must still match before ghost text is displayed.
 7. Only acceptance changes the document. Known model usage is counted independently, including when a stale result is not displayed.
 
+The stable system prompt requires `$...$` for inline math and `$$...$$` on its own line for
+a standalone formula. It excludes `\(...\)`, `\[...\]` and code fences as math wrappers.
+When the cursor is already inside math, the insertion must not duplicate delimiters present
+in the prefix or suffix. These rules are included in the complete-message token budget.
+
 ## Constraints for changes
 
 - Ghost text is a decoration; never modify Markdown before acceptance. Without a candidate, preserve native Tab/Esc behavior.

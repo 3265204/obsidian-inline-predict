@@ -1,7 +1,7 @@
 {
 	"id": "inline-predict",
 	"name": "Inline Predict",
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"minAppVersion": "1.13.0",
 	"description": "Context-aware inline AI completion with partial acceptance and local usage statistics.",
 	"author": "Inline Predict contributors",
