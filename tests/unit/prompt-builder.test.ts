@@ -68,8 +68,7 @@ describe('buildPromptMessages', () => {
 
 	it('states the trust boundary for delimited data in the system prompt', () => {
 		for (const tag of [
-			'<document-before-cursor>',
-			'<document-after-cursor>',
+			'<document-around-cursor>',
 			'<knowledge>',
 			'<writing-profile>',
 		]) {
@@ -90,6 +89,16 @@ describe('buildPromptMessages', () => {
 		expect(system?.content).toContain('do not duplicate delimiters already present before or after it');
 	});
 
+	it('要求同时读取前后文并只填补中间缺口', () => {
+		expect(COMPLETION_SYSTEM_PROMPT).toContain('document-around-cursor');
+		expect(COMPLETION_SYSTEM_PROMPT).toContain('Combine the context on BOTH sides');
+		expect(COMPLETION_SYSTEM_PROMPT).toContain('even for a familiar sentence');
+		expect(COMPLETION_SYSTEM_PROMPT).toContain('Bridge into the existing suffix');
+		expect(COMPLETION_SYSTEM_PROMPT).toContain('before + insertion + after must read coherently');
+		expect(COMPLETION_SYSTEM_PROMPT).toContain('Both sides already exist');
+		expect(COMPLETION_SYSTEM_PROMPT).toContain('If both sides already connect, output nothing');
+	});
+
 	it.each([
 		{ prefix: '能量公式 $E', suffix: '$ 与质量相关。', inMathBlock: false },
 		{ prefix: '独立公式：\n$$E', suffix: '$$\n', inMathBlock: true },
@@ -100,14 +109,13 @@ describe('buildPromptMessages', () => {
 			snapshot: makeSnapshot({ prefix, suffix, inMathBlock }),
 		});
 		expect(system?.content).toBe(COMPLETION_SYSTEM_PROMPT);
-		expect(user?.content).toContain(`<document-before-cursor>${prefix}<cursor/></document-before-cursor>`);
-		expect(user?.content).toContain(`<document-after-cursor>${suffix}</document-after-cursor>`);
+		expect(user?.content).toContain(`<document-around-cursor>${prefix}<cursor/>${suffix}</document-around-cursor>`);
 	});
 
 	it('delimits each context section with its tag and puts nearest context last', () => {
 		const [, user] = buildPromptMessages({ sections: baseSections, snapshot: makeSnapshot() });
 		const content = user?.content ?? '';
-		for (const tag of ['knowledge', 'writing-profile', 'document-structure', 'document-before-cursor', 'document-after-cursor']) {
+		for (const tag of ['knowledge', 'writing-profile', 'document-structure', 'document-around-cursor']) {
 			expect(content).toContain(`<${tag}>`);
 			expect(content).toContain(`</${tag}>`);
 		}
@@ -116,10 +124,7 @@ describe('buildPromptMessages', () => {
 			content.indexOf('<document-structure>'),
 		);
 		expect(content.indexOf('<document-structure>')).toBeLessThan(
-			content.indexOf('<document-before-cursor>'),
-		);
-		expect(content.indexOf('<document-before-cursor>')).toBeLessThan(
-			content.indexOf('<document-after-cursor>'),
+			content.indexOf('<document-around-cursor>'),
 		);
 	});
 
@@ -127,7 +132,7 @@ describe('buildPromptMessages', () => {
 		const [, user] = buildPromptMessages({ sections: baseSections, snapshot: makeSnapshot() });
 		const content = user?.content ?? '';
 		expect(content).toContain('The regex should match <cursor/>');
-		expect(content).toContain('<document-after-cursor>only lowercase letters.</document-after-cursor>');
+		expect(content).toContain('<cursor/>only lowercase letters.</document-around-cursor>');
 	});
 
 	it('does not leak rules or retrieved data into the system message', () => {
@@ -164,16 +169,25 @@ describe('buildPromptMessages', () => {
 			snapshot: makeSnapshot({ prefix: 'Fallback prefix text' }),
 		});
 		expect(messages[1]?.content).not.toContain('Fallback prefix text');
-		expect(messages[1]?.content).toContain('<document-before-cursor><cursor/>');
+		expect(messages[1]?.content).toContain('<document-around-cursor><cursor/>');
 	});
 
-	it('omits the after block when there is no suffix', () => {
+	it('连续片段只使用裁剪后的两侧，不恢复快照中省略的后文', () => {
+		const messages = buildPromptMessages({
+			sections: [makeSection('before', '保留前文')],
+			snapshot: makeSnapshot({ prefix: '原始前文', suffix: '预算省略的后文' }),
+		});
+		expect(messages[1]?.content).toBe('<document-around-cursor>保留前文<cursor/></document-around-cursor>');
+		expect(messages[1]?.content).not.toContain('预算省略的后文');
+	});
+
+	it('keeps a cursor at the end when there is no suffix', () => {
 		const messages = buildPromptMessages({
 			sections: [makeSection('before', 'Hello'), makeSection('after', '')],
 			snapshot: makeSnapshot(),
 		});
 		const user = messages[1]?.content ?? '';
-		expect(user).not.toContain('<document-after-cursor>');
+		expect(user).toContain('Hello<cursor/></document-around-cursor>');
 		expect(user).toContain('Hello<cursor/>');
 	});
 

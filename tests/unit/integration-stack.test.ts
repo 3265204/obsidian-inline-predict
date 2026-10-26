@@ -180,6 +180,24 @@ afterEach(() => {
 });
 
 describe('completion stack (scheduler + context + prediction + fake model)', () => {
+	it('文中补全参考后文并在连续输入时保留衔接空格', async () => {
+		const adapter = new FakeAdapter(() => modelResponse('quick brown '));
+		const harness = createHarness(adapter);
+		harness.scheduler.update(snapshot('The fox.', { cursor: 4 }));
+		await vi.advanceTimersByTimeAsync(5_000);
+		expect(adapter.calls).toHaveLength(1);
+		expect(adapter.calls[0]?.messages[1]?.content).toContain('<cursor/>fox.</document-around-cursor>');
+		expect(harness.scheduler.current()?.remainingText).toBe('quick brown ');
+
+		harness.scheduler.update(snapshot('The quick fox.', { cursor: 10, docVersion: 2,
+			lastEdit: { from: 4, to: 4, insertedText: 'quick ', removedLength: 0, at: Date.now() } }));
+		expect(harness.scheduler.current()?.remainingText).toBe('brown ');
+		expect(harness.scheduler.current()?.anchor).toBe(10);
+		expect(adapter.calls).toHaveLength(1);
+		expect('The quick ' + harness.scheduler.current()?.remainingText + 'fox.').toBe('The quick brown fox.');
+		harness.scheduler.dispose();
+	});
+
 	it('turns one debounced edit into a validated suggestion with a structured prompt', async () => {
 		const adapter = new FakeAdapter(() => modelResponse('方向上的缩放比例。'));
 		const harness = createHarness(adapter);
@@ -198,7 +216,7 @@ describe('completion stack (scheduler + context + prediction + fake model)', () 
 		expect(system?.role).toBe('system');
 		expect(system?.content).toContain('Untrusted data');
 		expect(user?.role).toBe('user');
-		expect(user?.content).toContain('<document-before-cursor>');
+		expect(user?.content).toContain('<document-around-cursor>');
 		expect(user?.content).toContain('特征值描述了线性变换在');
 		expect(user?.content).toContain('<cursor/>');
 	});

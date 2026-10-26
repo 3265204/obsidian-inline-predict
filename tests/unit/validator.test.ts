@@ -36,6 +36,19 @@ function makeResponse(
 }
 
 describe('validateSuggestion', () => {
+	it.each([
+		{ text: '城市公共图书馆的主要入口，同时也是社区活动的重要场所。', suffix: '，是城市公共图书馆的主要入口' },
+		{ text: '新增一句，然后说明所有设备均已完成连接，并可正常使用。', suffix: '所有设备均已完成连接，并可正常使用。' },
+		{ text: "I'm not sure what you mean— if you're seeing this, the setup works.", suffix: "but,you're seeing this, the setup works." },
+	])('后文衔接由提示词负责，不再按重复短语拦截模型回答：$suffix', ({ text, suffix }) => {
+		const result = validateSuggestion({
+			response: makeResponse(text), snapshot: makeSnapshot({ prefix: '说明：是', suffix }),
+			maxChars: 1_000,
+		});
+		expect(result.rejected).toBeNull();
+		expect(result.text).toBe(text);
+	});
+
 	it('returns clean text and trims trailing whitespace', () => {
 		const result = validateSuggestion({
 			response: makeResponse(' new completion text  \n'),
@@ -57,6 +70,30 @@ describe('validateSuggestion', () => {
 			expect(result.text).toBeNull();
 			expect(result.rejected).toBe('empty');
 		}
+	});
+
+	it.each([
+		{ prefix: 'The ', text: 'quick ', suffix: 'fox.', joined: 'The quick fox.' },
+		{ prefix: '清单：\n', text: '- 苹果\n', suffix: '- 香蕉', joined: '清单：\n- 苹果\n- 香蕉' },
+		{ prefix: '```js\n', text: 'const n = 1;\n', suffix: '```', joined: '```js\nconst n = 1;\n```' },
+	])('保留连接后文需要的空白：$joined', ({ prefix, text, suffix, joined }) => {
+		const result = validateSuggestion({
+			response: makeResponse(text), snapshot: makeSnapshot({ prefix, suffix }), maxChars: 1_000,
+		});
+		expect(result.rejected).toBeNull();
+		expect(result.text).toBe(text);
+		expect(prefix + result.text + suffix).toBe(joined);
+	});
+
+	it('文中补全仍拒绝纯空白，保留模型回答的后文重词和空白', () => {
+		for (const text of ['fox.', 'fox. \n']) {
+			const result = validateSuggestion({
+				response: makeResponse(text), snapshot: makeSnapshot({ prefix: 'The ', suffix: 'fox.' }), maxChars: 1_000,
+			});
+			expect(result.rejected).toBeNull();
+			expect(result.text).toBe(text);
+		}
+		expect(validateSuggestion({ response: makeResponse(' \n\t'), snapshot: makeSnapshot({ suffix: 'fox.' }), maxChars: 1_000 }).rejected).toBe('empty');
 	});
 
 	it('normalizes CRLF to LF', () => {
@@ -140,23 +177,24 @@ describe('validateSuggestion', () => {
 		expect(result.degraded).toBe(true);
 	});
 
-	it('rejects candidates that echo the following text', () => {
+	it('does not block candidates by matching the following text', () => {
 		const result = validateSuggestion({
 			response: makeResponse('the lazy dog.'),
 			snapshot: makeSnapshot({ prefix: 'The quick brown fox ', suffix: 'the lazy dog.' }),
 			maxChars: 1_000,
 		});
-		expect(result.text).toBeNull();
-		expect(result.rejected).toBe('echo');
+		expect(result.text).toBe('the lazy dog.');
+		expect(result.rejected).toBeNull();
 	});
 
-	it('rejects a multi-line candidate whose first line echoes the suffix', () => {
+	it('does not block a multi-line candidate based on a following line', () => {
 		const result = validateSuggestion({
 			response: makeResponse('the lazy dog.\nmore text'),
 			snapshot: makeSnapshot({ suffix: 'the lazy dog.\nand then...' }),
 			maxChars: 1_000,
 		});
-		expect(result.rejected).toBe('echo');
+		expect(result.rejected).toBeNull();
+		expect(result.text).toBe('the lazy dog.\nmore text');
 	});
 
 	it('rejects candidates that repeat the text before the cursor', () => {

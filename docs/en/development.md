@@ -52,6 +52,26 @@ same change when a contract changes. Keep business logic in its module and `main
 6. Validation handles truncation and repetition. Request ID, document version, cursor and file path must still match before ghost text is displayed.
 7. Only acceptance changes the document. Known model usage is counted independently, including when a stale result is not displayed.
 
+Mid-document completion explicitly asks for `before + insertion + after` to read coherently.
+Completion and optional relevance checks both send a single
+`<document-around-cursor>before<cursor/>after</document-around-cursor>` excerpt, without
+synthetic whitespace or delimiter tags between the text on either side. Only budgeted sections
+are rendered; omitted text is never restored from the raw snapshot.
+Snapshots capture up to 6,000 preceding and 3,000 following characters before token trimming;
+the final request must retain both sides when present, otherwise it is skipped.
+Local relevance filtering checks nearby following text before rejecting a candidate based on
+the prefix alone. The optional relevance judge shares 300 Unicode code points between the
+prefix tail and suffix head, borrowing unused space from either side. Its shared interfaces
+live in `src/core/types.ts`. Completed insertions preserve trailing whitespace when following
+text exists; whitespace-only output is still rejected. CM6 tests cover ghost-only display,
+partial acceptance and full acceptance without changing the original following text.
+
+The system rule asks the model to combine both sides and bridge into the existing suffix,
+including when the note resembles a familiar sentence. Following text is
+context for the model, not a lexical veto on its output; suffix overlap neither blocks nor
+trims the insertion. Regression tests
+assert that suffix matches pass through unchanged and do not trigger an extra model check.
+
 The stable system prompt requires `$...$` for inline math and `$$...$$` on its own line for
 a standalone formula. It excludes `\(...\)`, `\[...\]` and code fences as math wrappers.
 When the cursor is already inside math, the insertion must not duplicate delimiters present

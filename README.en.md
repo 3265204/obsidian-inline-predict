@@ -64,6 +64,12 @@ but mobile keyboard and touch behavior have not been verified on real devices.
 
 ## Output checks
 
+For a cursor inside existing text, the model receives one budgeted `before <cursor/> after`
+excerpt and is instructed to return only the missing span. Filtering and optional model
+relevance checks also use the following text. The model decides how to join the existing sides;
+output is not blocked by local suffix-overlap matching. Joining spaces and line breaks are preserved. If the budget
+cannot retain following context, that prediction is skipped.
+
 Output is checked for completion status, repetition, control markers and truncation. Text cut off
 by the output token limit is used only when a complete boundary can be retained; otherwise it is hidden.
 Local relevance filtering covers specific short Han-character contexts with longer suggestions;

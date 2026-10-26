@@ -50,10 +50,13 @@ function snapshot(prefix: string): EditorSnapshot {
 	};
 }
 
-function contextFor(prefix: string): BuiltContext {
-	const snap = snapshot(prefix);
+function contextFor(prefix: string, suffix = ''): BuiltContext {
+	const snap = { ...snapshot(prefix), suffix, lineTextAfter: suffix };
 	const budget = createTokenBudget({ contextWindow: 8_192, reservedOutputTokens: 256 });
-	const fitted = fitSectionsToBudget([{ id: 'before', label: 'before', trust: 'document', text: prefix, estimatedTokens: 1 }], budget, heuristicTokenCounter);
+	const fitted = fitSectionsToBudget([
+		{ id: 'before', label: 'before', trust: 'document', text: prefix, estimatedTokens: 1 },
+		{ id: 'after', label: 'after', trust: 'document', text: suffix, estimatedTokens: 1 },
+	], budget, heuristicTokenCounter);
 	return {
 		snapshot: snap,
 		sections: fitted.sections,
@@ -132,6 +135,37 @@ const options = {
 };
 
 describe('relatedness arbitration', () => {
+	it('后文重词不再触发拦截或追加模型复核', async () => {
+		const suffix = '，是城市公共图书馆的主要入口';
+		const model = new FakeModel('城市公共图书馆的主要入口，同时也是社区活动的重要场所。', 'YES');
+		const outcome = await engineWith(model, true).predict(contextFor('这里是', suffix), options);
+		expect(outcome.reason).toBeNull();
+		expect(outcome.candidate?.text).toBe('城市公共图书馆的主要入口，同时也是社区活动的重要场所。');
+		expect(model.calls).toHaveLength(1);
+		expect(model.judgeCalls).toHaveLength(0);
+	});
+
+	it('后文已提供词面依据时保留候选且不增加复核调用', async () => {
+		const model = new FakeModel(EXPLANATION, 'NO');
+		const suffix = '，通过基变换理解这种关系。';
+		const outcome = await engineWith(model, true).predict(contextFor('矩阵相似', suffix), options);
+		expect(outcome.reason).toBeNull();
+		expect(outcome.candidate?.text).toBe(EXPLANATION);
+		expect(model.calls).toHaveLength(1);
+		expect(model.judgeCalls).toHaveLength(0);
+		expect(model.calls[0]?.messages[1]?.content).toContain(`<cursor/>${suffix}</document-around-cursor>`);
+	});
+
+	it('词面过滤仍可疑时复核请求同时包含前后文', async () => {
+		const model = new FakeModel(EXPLANATION, 'YES');
+		const suffix = '，这就是共轭关系。';
+		const outcome = await engineWith(model, true).predict(contextFor('矩阵相似', suffix), options);
+		expect(outcome.candidate?.text).toBe(EXPLANATION);
+		expect(model.calls).toHaveLength(2);
+		expect(model.judgeCalls[0]?.messages[1]?.content).toContain('<document-around-cursor>矩阵相似<cursor/>');
+		expect(model.judgeCalls[0]?.messages[1]?.content).toContain(`<cursor/>${suffix}</document-around-cursor>`);
+	});
+
 	it('lets the judge keep a related explanation that shares no literal term', async () => {
 		const model = new FakeModel(EXPLANATION, 'YES');
 		const outcome = await engineWith(model, true).predict(contextFor('矩阵相似'), options);

@@ -11,16 +11,17 @@ import { CompletionScheduler } from '../../src/scheduler/scheduler';
 import { LruPredictionCache } from '../../src/scheduler/prediction-cache';
 import { Telemetry } from '../../src/telemetry/stats';
 import { applySettingsPatch, DEFAULT_SETTINGS } from '../../src/settings/schema';
-import type { ModelAdapter } from '../../src/core/types';
+import type { ModelAdapter, ModelRequest } from '../../src/core/types';
 
 const open: { view: EditorView; integration: CompletionIntegration }[] = [];
 afterEach(() => { for (const item of open.splice(0)) { item.integration.destroy(); item.view.destroy(); } });
 async function flush(): Promise<void> { for (let i = 0; i < 16; i++) await Promise.resolve(); }
 
-async function setup() {
+async function setup(doc = 'Hello ', cursor = 6, completion = 'world world peace.') {
 	let calls = 0;
+	const requests: ModelRequest[] = [];
 	const adapter: ModelAdapter = { id: 'fake', modelId: 'fake', contextWindow: 8192,
-		async complete() { calls++; return { text: 'world world peace.', finishReason: 'stop', usage: null, modelId: 'fake' }; } };
+		async complete(request) { calls++; requests.push(request); return { text: completion, finishReason: 'stop', usage: null, modelId: 'fake' }; } };
 	const telemetry = new Telemetry();
 	const settings = applySettingsPatch(DEFAULT_SETTINGS, { completion: { autoTrigger: false } });
 	const integration = createCompletionIntegration({ getSettings: () => settings,
@@ -31,13 +32,39 @@ async function setup() {
 			getConfig: () => ({ baseDebounceMs: 400, minRequestIntervalMs: 350, maxOutputTokens: 256,
 				requestTimeoutMs: 8000, temperature: 0.2, cacheEntries: 64, contextCacheEntries: 32, debug: false, autoTrigger: false }), events }),
 	});
-	const view = new EditorView({ state: EditorState.create({ doc: 'Hello ', selection: { anchor: 6 }, extensions: [integration.extension] }), parent: document.body });
+	const view = new EditorView({ state: EditorState.create({ doc, selection: { anchor: cursor }, extensions: [integration.extension] }), parent: document.body });
 	open.push({ view, integration });
 	await flush(); integration.requestNow(); await flush();
-	return { view, integration, telemetry, calls: () => calls };
+	return { view, integration, telemetry, requests, calls: () => calls };
 }
 
 describe('真实编辑器、控制器和调度器的衔接', () => {
+	it('文中补全发送完整缺口上下文，不按后文词面拦截候选', async () => {
+		const prefix = '这里是';
+		const suffix = '，是城市公共图书馆的主要入口';
+		const doc = prefix + suffix;
+		const h = await setup(doc, prefix.length, '城市公共图书馆的主要入口，同时也是社区活动的重要场所。');
+		expect(getGhostSuggestion(h.view.state)?.remainingText).toBe('城市公共图书馆的主要入口，同时也是社区活动的重要场所。');
+		expect(h.requests[0]?.messages[1]?.content).toContain(`<document-around-cursor>${prefix}<cursor/>${suffix}</document-around-cursor>`);
+		expect(h.view.state.doc.toString()).toBe(doc);
+		expect(h.calls()).toBe(1);
+		expect(h.telemetry.snapshot().candidatesShown).toBe(1);
+	});
+
+	it('文中灰字不改文档，部分和完整接受保留后文与衔接空格', async () => {
+		const h = await setup('The fox.', 4, 'quick brown ');
+		expect(h.view.state.doc.toString()).toBe('The fox.');
+		expect(getGhostSuggestion(h.view.state)?.remainingText).toBe('quick brown ');
+		expect(h.requests[0]?.messages[1]?.content).toContain('<cursor/>fox.</document-around-cursor>');
+		expect(h.integration.acceptWord()).toBe(true);
+		expect(h.view.state.doc.toString()).toBe('The quick fox.');
+		expect(getGhostSuggestion(h.view.state)?.remainingText).toBe('brown ');
+		expect(h.integration.acceptAll()).toBe(true);
+		expect(h.view.state.doc.toString()).toBe('The quick brown fox.');
+		expect(getGhostSuggestion(h.view.state)).toBeNull();
+		expect(h.calls()).toBe(1);
+	});
+
 	it('连续部分接受重复词时，每个插入只消费一次', async () => {
 		const h = await setup();
 		expect(h.integration.acceptWord()).toBe(true);

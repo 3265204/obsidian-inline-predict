@@ -13,12 +13,12 @@ import {
 	type PredictionRunner,
 	type PredictOptions,
 	type PredictionSkipReason,
+	type RelevanceJudge,
 	type TokenUsage,
 } from '../core/types';
 import { heuristicTokenCounter } from '../tokens/estimator';
 import { buildBudgetedPrompt } from './prompt-budget';
 import { mergeUsage } from './relevance-judge';
-import type { RelevanceJudge } from './relevance-judge';
 import { validateSuggestion } from './validator';
 
 export interface PredictionEngineOptions {
@@ -109,6 +109,7 @@ export class PredictionEngine implements PredictionRunner {
 			}
 			const judged = await this.relevanceJudge.judge({
 				context: context.snapshot.prefix,
+				suffix: context.snapshot.suffix,
 				candidate: validation.text,
 				signal: options.signal,
 				timeoutMs: options.timeoutMs,

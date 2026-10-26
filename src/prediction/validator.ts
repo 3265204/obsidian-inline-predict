@@ -5,7 +5,7 @@
  *  - The provider truncated the answer (`finish_reason: 'length'`). We must never show a
  *    half-finished sentence blindly, so truncated output is repaired at the last complete
  *    semantic boundary or rejected.
- *  - The model echoed text that already exists around the cursor. Inserting it would duplicate
+ *  - The model echoed text that already exists before the cursor. Inserting it would duplicate
  *    content, so it is rejected as `echo`.
  *
  * The validator never truncates silently: any repair marks the candidate `degraded` so telemetry
@@ -22,7 +22,7 @@ import {
 	lastCompleteBoundary,
 	stripModelControlTokens,
 } from '../core/text';
-import { assessOffTopic } from './relatedness';
+import { assessInsertionOffTopic } from './relatedness';
 
 export interface ValidateInput {
 	response: ModelResponse;
@@ -81,40 +81,26 @@ function truncateToLimit(text: string, maxChars: number): string | null {
 	return repaired.length >= MIN_REPAIRED_CHARS ? repaired : null;
 }
 
-function firstLine(text: string): string {
-	const index = text.indexOf('\n');
-	return index === -1 ? text : text.slice(0, index);
-}
-
-/** True when the candidate duplicates text the document already has at/around the cursor. */
-function isEcho(text: string, snapshot: EditorSnapshot): boolean {
-	if (snapshot.suffix.length > 0) {
-		if (snapshot.suffix.startsWith(text)) return true;
-		// A multi-line answer whose first line merely repeats the upcoming line is an echo too.
-		const line = firstLine(text);
-		if (line !== text && line.trim().length >= 3 && snapshot.suffix.startsWith(line)) {
-			return true;
-		}
-	}
-	if (snapshot.prefix.length > 0 && snapshot.prefix.endsWith(text)) return true;
-	return false;
-}
-
 /**
  * Remove a wrapping ``` fence the model added around its own answer. Only safe outside code
  * blocks — inside one, the fence is legitimate content.
  */
 function stripWrapperFence(text: string): string {
-	const match = FENCE_WRAP_RE.exec(text);
+	const match = FENCE_WRAP_RE.exec(text.trimEnd());
 	if (!match) return text;
-	return (match[1] ?? '').trimEnd();
+	return match[1] ?? '';
+}
+
+/** 文中插入的尾空白可能用于连接后文，不能像文末续写那样直接清掉。 */
+function trimForInsertion(text: string, snapshot: EditorSnapshot): string {
+	return snapshot.suffix.length > 0 ? text : text.trimEnd();
 }
 
 export function validateSuggestion(input: ValidateInput): ValidationResult {
 	const { response, snapshot, maxChars } = input;
 	// Providers (notably DeepSeek V4 reasoning models) can leak internal DSML tool-call markup
 	// into content; it is never valid insertion text, so strip it before any other check.
-	let text = stripModelControlTokens(normalize(response.text)).trimEnd();
+	let text = trimForInsertion(stripModelControlTokens(normalize(response.text)), snapshot);
 	let degraded = false;
 
 	switch (response.finishReason) {
@@ -133,7 +119,7 @@ export function validateSuggestion(input: ValidateInput): ValidationResult {
 			break;
 	}
 
-	if (text.length === 0) return rejected('empty', degraded);
+	if (text.trim().length === 0) return rejected('empty', degraded);
 
 	if (response.finishReason === 'length') {
 		degraded = true;
@@ -151,22 +137,21 @@ export function validateSuggestion(input: ValidateInput): ValidationResult {
 	}
 
 	if (!snapshot.inCodeBlock) {
-		const stripped = stripWrapperFence(text).trimEnd();
+		const stripped = trimForInsertion(stripWrapperFence(text), snapshot);
 		if (stripped !== text) {
 			text = stripped;
-			if (text.length === 0) return rejected('empty', degraded);
+			if (text.trim().length === 0) return rejected('empty', degraded);
 		}
 	}
 
-	if (isEcho(text, snapshot)) return rejected('echo', degraded);
+	if (snapshot.prefix.length > 0 && snapshot.prefix.endsWith(text.trimEnd())) return rejected('echo', degraded);
 
 	// Never hand the editor a dangling high surrogate: insertion would corrupt the document.
-	if (endsWithHighSurrogate(text)) text = text.slice(0, -1).trimEnd();
+	if (endsWithHighSurrogate(text)) text = trimForInsertion(text.slice(0, -1), snapshot);
 
 	if (input.offTopicFilter === true) {
-		const context = snapshot.prefix.length > 0 ? snapshot.prefix : snapshot.suffix;
-		if (context.trim().length > 0) {
-			const assessment = assessOffTopic(context, text);
+		if (snapshot.prefix.trim().length > 0 || snapshot.suffix.trim().length > 0) {
+			const assessment = assessInsertionOffTopic(snapshot.prefix, snapshot.suffix, text);
 			if (assessment.assessed && assessment.offTopic) {
 				// Keep the cleaned text: the prediction engine may ask the model-based relevance
 				// judge whether this lexically-disjoint candidate is actually related.
@@ -174,7 +159,7 @@ export function validateSuggestion(input: ValidateInput): ValidationResult {
 			}
 		}
 	}
-	if (text.length === 0) return rejected('empty', degraded);
+	if (text.trim().length === 0) return rejected('empty', degraded);
 
 	return { text, rejected: null, degraded };
 }

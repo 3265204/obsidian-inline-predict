@@ -119,3 +119,21 @@ export function assessOffTopic(
 		assessed: true,
 	};
 }
+
+/** 前文词面不重合时，后文也能为中间插入提供依据，避免无谓的模型复核。 */
+export function assessInsertionOffTopic(
+	before: string,
+	after: string,
+	candidate: string,
+): RelatednessAssessment {
+	const assessment = assessOffTopic(before.trim().length > 0 ? before : after, candidate);
+	if (!assessment.offTopic || before.trim().length === 0 || after.trim().length === 0) {
+		return assessment;
+	}
+	// 只查看紧邻光标的后文，不让远处无关段落的偶然重词影响判断。
+	const lookahead = assessOffTopic(after.trimStart().slice(0, DEFAULTS.maxContextChars), candidate, {
+		minCjkRatio: 0,
+		minContextTerms: 1,
+	});
+	return lookahead.sharedTerms > 0 ? lookahead : assessment;
+}

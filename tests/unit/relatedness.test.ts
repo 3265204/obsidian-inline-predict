@@ -73,6 +73,33 @@ describe('assessOffTopic', () => {
 });
 
 describe('validator relatedness gate', () => {
+	it.each([
+		'，随后通过可逆的基变换讨论两种表示之间的关系。',
+		`，随后通过可逆的基变换讨论两种表示之间的关系。${'后续段落。'.repeat(100)}`,
+		'，使用 invertible change of basis 说明。',
+	])('后文可支持与短前文没有重词的中间插入', (suffix) => {
+		const text = suffix.includes('invertible')
+			? '可以使用 invertible 的表示转换解释这一关系，并给出具体步骤'
+			: '可以看作同一个映射在不同基下的表示，并通过可逆的基变换完成转换';
+		expect(assessOffTopic('矩阵相似', text).offTopic).toBe(true);
+		const result = validateSuggestion({
+			response: response(text), snapshot: { ...snapshot('矩阵相似'), suffix },
+			maxChars: 4_000, offTopicFilter: true,
+		});
+		expect(result.rejected).toBeNull();
+		expect(result.text).toBe(text);
+	});
+
+	it('候选与前后文都无关时仍拒绝，不利用远处的偶然重词', () => {
+		for (const suffix of ['，描述矩阵的性质。', `，描述矩阵的性质。${'后续段落。'.repeat(100)}海边与灯塔。`]) {
+			const result = validateSuggestion({
+				response: response(UNRELATED_TEXT), snapshot: { ...snapshot('线性代数'), suffix },
+				maxChars: 4_000, offTopicFilter: true,
+			});
+			expect(result.rejected).toBe('off-topic');
+		}
+	});
+
 	it('rejects off-topic text when the filter is enabled', () => {
 		const result = validateSuggestion({
 			response: response(UNRELATED_TEXT),

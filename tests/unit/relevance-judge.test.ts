@@ -56,6 +56,18 @@ describe('parseRelevanceAnswer', () => {
 });
 
 describe('ModelRelevanceJudge', () => {
+	it.each([
+		{ context: '左'.repeat(400), suffix: '右'.repeat(400), beforeCount: 150, afterCount: 150 },
+		{ context: '左'.repeat(400), suffix: '右'.repeat(10), beforeCount: 290, afterCount: 10 },
+		{ context: '', suffix: '右'.repeat(400), beforeCount: 0, afterCount: 300 },
+	])('前后文共享有限额度并截取靠近光标的一侧：$beforeCount/$afterCount', async ({ context, suffix, beforeCount, afterCount }) => {
+		const adapter = new ScriptedAdapter(() => response('YES'));
+		await new ModelRelevanceJudge(adapter).judge({ ...input, context, suffix });
+		const user = adapter.calls[0]?.messages[1]?.content ?? '';
+		expect(adapter.calls).toHaveLength(1);
+		expect(user).toContain(`<document-around-cursor>${'左'.repeat(beforeCount)}<cursor/>${'右'.repeat(afterCount)}</document-around-cursor>`);
+	});
+
 	it('被截断的 YES 不作为可靠复核结果，但仍记录调用用量', async () => {
 		const adapter = new ScriptedAdapter(() => ({ ...response('YES'), finishReason: 'length' }));
 		const result = await new ModelRelevanceJudge(adapter).judge(input);

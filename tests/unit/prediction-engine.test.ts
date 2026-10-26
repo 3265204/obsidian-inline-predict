@@ -43,6 +43,7 @@ function makeContext(
 	snapshot: EditorSnapshot,
 	sections: ContextSection[] = [
 		{ id: 'before', label: 'document-before-cursor', trust: 'document', text: snapshot.prefix, estimatedTokens: 8 },
+		{ id: 'after', label: 'document-after-cursor', trust: 'document', text: snapshot.suffix, estimatedTokens: 1 },
 	],
 ): BuiltContext {
 	const budget = createTokenBudget({ contextWindow: 8_192, reservedOutputTokens: 256 });
@@ -180,7 +181,7 @@ describe('PredictionEngine.predict', () => {
 		expect(outcome.finishReason).toBe('length');
 	});
 
-	it('rejects suggestions that echo the document suffix', async () => {
+	it('does not reject model output solely for matching the document suffix', async () => {
 		const adapter = new FakeAdapter(async () => response('the lazy dog.'));
 		const engine = new PredictionEngine({ adapter, maxSuggestionChars: 500 });
 		const outcome = await engine.predict(
@@ -188,8 +189,8 @@ describe('PredictionEngine.predict', () => {
 			makeOptions(),
 		);
 
-		expect(outcome.candidate).toBeNull();
-		expect(outcome.reason).toBe('echo');
+		expect(outcome.candidate?.text).toBe('the lazy dog.');
+		expect(outcome.reason).toBeNull();
 	});
 
 	it('does not throw on a provider timeout', async () => {

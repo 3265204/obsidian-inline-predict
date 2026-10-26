@@ -28,5 +28,7 @@ export function buildBudgetedPrompt(
 	}
 	// 原有前文完全放不下时跳过预测，避免在缺乏依据的情况下生成。
 	if (context.snapshot.prefix.length > 0 && !sections.some((s) => s.id === 'before' && s.text.length > 0)) return null;
+	// 中间补全不能退化为盲目续写；后文完全放不下时同样跳过。
+	if (context.snapshot.suffix.length > 0 && !sections.some((s) => s.id === 'after' && s.text.length > 0)) return null;
 	return messages;
 }

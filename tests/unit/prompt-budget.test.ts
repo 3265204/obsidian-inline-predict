@@ -3,6 +3,7 @@ import { ContextEngine } from '../../src/context/context-engine';
 import { PredictionEngine } from '../../src/prediction/engine';
 import { buildPromptMessages } from '../../src/prediction/prompt-builder';
 import { heuristicTokenCounter } from '../../src/tokens/estimator';
+import { buildBudgetedPrompt } from '../../src/prediction/prompt-budget';
 import type { EditorSnapshot, ModelAdapter, ModelRequest } from '../../src/core/types';
 
 function snapshot(): EditorSnapshot {
@@ -13,6 +14,27 @@ function snapshot(): EditorSnapshot {
 }
 
 describe('最终消息预算', () => {
+	it.each(['context', 'final'])('后文被 $0 预算省略时跳过，不能退化为文末续写', async (stage) => {
+		let calls = 0;
+		const adapter: ModelAdapter = { id: 'fake', modelId: 'fake', contextWindow: 8192,
+			async complete() { calls++; return { text: '不应出现', finishReason: 'stop', usage: null, modelId: 'fake' }; } };
+		const context = await new ContextEngine({ modelContextWindow: 8192, maxOutputTokens: 256 }).build(snapshot(), new AbortController().signal);
+		if (stage === 'context') {
+			context.sections = context.sections.filter((section) => section.id !== 'after');
+		} else {
+			const before = context.sections.filter((section) => section.id === 'before');
+			context.sections = [...before, ...context.sections.filter((section) => section.id === 'after')];
+			// 只有删掉后文才能刚好保留完整前文，验证最后一轮裁剪不能发出盲补请求。
+			context.report.budget.windowTokens = heuristicTokenCounter.countMessages(buildPromptMessages({ ...context, sections: before })) + 256 + 16;
+		}
+		expect(buildBudgetedPrompt(context, 8192, 256, heuristicTokenCounter)).toBeNull();
+		const outcome = await new PredictionEngine({ adapter, maxSuggestionChars: 100 }).predict(context, {
+			requestId: 1, signal: new AbortController().signal, timeoutMs: 1000, maxOutputTokens: 256, temperature: 0.2,
+		});
+		expect(outcome.reason).toBe('budget-exceeded');
+		expect(calls).toBe(0);
+	});
+
 	it('公式格式规则进入真实模型请求，并只返回光标处续写', async () => {
 		const calls: ModelRequest[] = [];
 		const adapter: ModelAdapter = {

@@ -402,6 +402,27 @@ export interface PredictionRunner {
 	predict(context: BuiltContext, options: PredictOptions): Promise<PredictionOutcome>;
 }
 
+/** 可选相关性复核使用双向上下文，前后文共享有限额度。 */
+export interface RelevanceJudgeInput {
+	context: string;
+	suffix?: string;
+	candidate: string;
+	signal: AbortSignal;
+	timeoutMs: number;
+	requestId: number;
+}
+
+export interface RelevanceJudgeResult {
+	/** 无法可靠判断时为 null，不能据此放行候选。 */
+	related: boolean | null;
+	usage: TokenUsage | null;
+	call?: ModelCallRecord;
+}
+
+export interface RelevanceJudge {
+	judge(input: RelevanceJudgeInput): Promise<RelevanceJudgeResult>;
+}
+
 /** The editor-facing scheduler surface consumed by the completion controller. */
 export interface SchedulerPort {
 	/** Called for every relevant editor event. Scheduler may debounce or ignore it. */
